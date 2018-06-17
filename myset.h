@@ -260,9 +260,10 @@ private:
     void alloc (node *&cur, const node *o) {
         if (!o) return;
         if (o->l) cur->l = new extended_node(static_cast<extended_node*>(o->l)->value, cur);
+        alloc(cur->l, o->l);
         if (o->r) cur->r = new extended_node(static_cast<extended_node*>(o->r)->value, cur);
-    }
-    void dealloc(node *&cur) {
+        alloc(cur->r, o->r);    }
+    void dealloc(node *&cur) noexcept {
         if (!cur) return;
         if (cur->r) dealloc(cur->r);
         if (cur->l) dealloc(cur->l);
