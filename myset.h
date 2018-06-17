@@ -2,6 +2,7 @@
 #define MYSET_H
 
 #include <iterator>
+#include <iostream>
 
 template <typename T>
 class Set {
@@ -9,15 +10,22 @@ public:
     struct node {
        // T value;
         node *l, *r, *par;
-        node() : l(nullptr), r(nullptr), par(nullptr) {}
+        node() : l(nullptr), r(nullptr), par(nullptr) {std::cerr << "b";}
+        virtual ~node() {
+            std::cerr << "~b";
+        }
         node(node* l, node* r, node* par) : l(l), r(r), par(par) {}
     };
 
     struct extended_node : public node {
         T value;
         extended_node() = delete;
+        ~extended_node() {
+            std::cerr << "~d";
+        }
+
         extended_node(T const& v, node* pv = nullptr, node* lv = nullptr, node* rv = nullptr) :
-            value(v), node(lv, rv, pv) {}
+            value(v), node(lv, rv, pv) {std::cerr << "d";}
     };
 
     Set() noexcept : root(nullptr) {}
@@ -30,7 +38,7 @@ public:
     }
     Set& operator = (Set const& o) {
         Set tmp(o);
-        std::swap(*this, tmp);
+        swap(*this, tmp);
         return *this;
     }
 
@@ -38,8 +46,8 @@ public:
 
     //ITERATOR IMPL
 
-  //  class Iterator : std::iterator<std::bidirectional_iterator_tag, U, std::ptrdiff_t, U*, U&> {
-    class Iterator {
+    class Iterator : std::iterator<std::bidirectional_iterator_tag, U, std::ptrdiff_t, U*, U&> {
+  //  class Iterator {
 
     public:
         using difference_type = std::ptrdiff_t;
@@ -98,8 +106,10 @@ public:
         }
 
         U& operator *() const {
-
            return static_cast<extended_node*>(ptr)->value;
+        }
+        U* operator ->() const {
+           return &(static_cast<extended_node*>(ptr)->value);
         }
 
         friend bool operator ==(Iterator const& a, Iterator const& b) {
@@ -166,6 +176,7 @@ public:
         }
         if (!v->r && val < x) {
             v->r = new extended_node(x, v);
+
             return std::make_pair(iterator(v->r), true);
         }
         if (x < val) return insert(x, v->l, true);
@@ -242,6 +253,10 @@ public:
             if (v->par->l == v) v->par->l = next; else v->par->r = next;
         }
         delete v;
+        if (!root->l) {
+            delete root;
+            root = nullptr;
+        }
         return upper_bound(x);
     }
 
