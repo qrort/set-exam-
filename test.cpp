@@ -62,8 +62,9 @@ TEST(correctness, assign_operator) {
     Set <int> b;
     mass_push_back(b, {5, 6, 7, 8});
     Set<int> c(b);
-    //a = b;
+    a = b;
     expect_eq(c, {5, 6, 7, 8});
+    expect_eq(a, {5, 6, 7, 8});
 }
 
 TEST(iterators, rbegin_inc) {
