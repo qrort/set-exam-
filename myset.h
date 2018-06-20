@@ -8,33 +8,27 @@ template <typename T>
 class Set {
 public:
     struct node {
-       // T value;
         node *l, *r, *par;
-        node() : l(nullptr), r(nullptr), par(nullptr) {std::cerr << "b";}
-        virtual ~node() {
-            std::cerr << "~b";
-        }
+        node() : l(nullptr), r(nullptr), par(nullptr) {}
+        virtual ~node() = default;
         node(node* l, node* r, node* par) : l(l), r(r), par(par) {}
     };
-
     struct extended_node : public node {
         T value;
         extended_node() = delete;
-        ~extended_node() {
-            std::cerr << "~d";
-        }
-
+        ~extended_node() = default;
         extended_node(T const& v, node* pv = nullptr, node* lv = nullptr, node* rv = nullptr) :
-            value(v), node(lv, rv, pv) {std::cerr << "d";}
+            value(v), node(lv, rv, pv) {}
     };
 
-    Set() noexcept : root(nullptr) {}
+    Set() noexcept {}
     ~Set() noexcept {
-        dealloc(root);
+        dealloc(_end.l);
+        _end.l = nullptr;
     }
-    Set(Set const& o) {
-        root = new node();
-        alloc(root, o.root);
+    Set(Set const& o) : _end(o._end) {
+        _end.l = alloc(o._end.l);
+        if (_end.l) _end.l->par = &_end;
     }
     Set& operator = (Set const& o) {
         Set tmp(o);
@@ -46,16 +40,18 @@ public:
 
     //ITERATOR IMPL
 
-    class Iterator : std::iterator<std::bidirectional_iterator_tag, U, std::ptrdiff_t, U*, U&> {
+    class Iterator : std::iterator<std::bidirectional_iterator_tag, const U, std::ptrdiff_t, const U*, const U&> {
   //  class Iterator {
 
     public:
         using difference_type = std::ptrdiff_t;
-        using value_type = U;
-        using pointer = U*;
-        using reference = U&;
+        using value_type = const U;
+        using pointer = const U*;
+        using reference = const U&;
         using iterator_category = std::bidirectional_iterator_tag;
         friend class Set;
+
+        Iterator () = default;
 
         template <typename V>
         Iterator(const Iterator<V>& o, typename std::enable_if<std::is_same<U, const V>::value>::type* = nullptr) : ptr(o.ptr) {}
@@ -104,11 +100,10 @@ public:
             --(*this);
             return res;
         }
-
-        U& operator *() const {
-           return static_cast<extended_node*>(ptr)->value;
+        const U& operator *() const {
+           return (static_cast<extended_node*>(ptr)->value);
         }
-        U* operator ->() const {
+        const U* operator ->() const {
            return &(static_cast<extended_node*>(ptr)->value);
         }
 
@@ -131,22 +126,22 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     iterator begin() {
-        if (!root) return iterator(root);
-        node* v = root;
+        node* v = _end.l;
+        if (!v) return end();
         while (v->l) v = v->l;
         return iterator(v);
     }
     const_iterator begin() const {
-        if (!root) return iterator(root);
-        node* v = root;
+        node* v = _end.l;
+        if (!v) return end();
         while (v->l) v = v->l;
         return const_iterator(v);
     }
     iterator end() {
-        return iterator(root);
+        return iterator(&_end);
     }
-    const_iterator end() const{
-        return const_iterator(root);
+    const_iterator end() const {
+        return const_iterator(const_cast<node*>(&_end));
     }
     reverse_iterator rbegin() {
         return reverse_iterator(end());
@@ -163,12 +158,11 @@ public:
     //ENDS HERE
 
     std::pair <iterator, bool> insert(T const& x, node* v = nullptr, bool init = false) {
-        if (!root) {
-            root = new node();
-            root->l = new extended_node(x, root);
-            return std::make_pair(iterator(root->l), true);
+        if (!init) v = _end.l;
+        if (!_end.l) {
+            _end.l = new extended_node(x, &_end);
+            return std::make_pair(iterator(_end.l), true);
         }
-        if (!init) v = root->l;
         const T val = static_cast<extended_node*>(v)->value;
         if (!v->l && x < val) {
             v->l = new extended_node(x, v);
@@ -184,9 +178,17 @@ public:
         return std::make_pair(iterator(v), false);
     }
 
+    iterator find(T const& x, node* v = nullptr, bool init = false) noexcept {
+        if (!init) v = _end.l;
+        if (!v) return end();
+        T const& val = static_cast<extended_node*>(v)->value;
+        if (x < val) return find(x, v->l, true);
+        if (val < x) return find(x, v->r, true);
+        return iterator(v);
+    }
+
     const_iterator find(T const& x, node* v = nullptr, bool init = false) const noexcept {
-        if (!root) return end();
-        if (!init) v = root->l;
+        if (!init) v = _end.l;
         if (!v) return end();
         T const& val = static_cast<extended_node*>(v)->value;
         if (x < val) return find(x, v->l, true);
@@ -195,8 +197,7 @@ public:
     }
 
     const_iterator upper_bound(T const& x) const noexcept {
-        if (!root) return end();
-       node* v = root->l;
+       node* v = _end.l;
        node* last = nullptr;
        while(v) {
            if (x < static_cast<extended_node*>(v)->value) {
@@ -211,6 +212,8 @@ public:
     }
 
     const_iterator erase(const_iterator place) noexcept {
+        const_iterator res(place);
+        res++;
         if (place == end()) return end();
         node* v = place.ptr;
         T x = static_cast<extended_node*>(v)->value;
@@ -233,7 +236,10 @@ public:
                 v->l->par = v->par;
             }
         } else {
-            node* next = upper_bound(static_cast<extended_node*>(v)->value).ptr;
+            //node* next = upper_bound(static_cast<extended_node*>(v)->value).ptr;
+            iterator cur(v);
+            cur++;
+            node* next = cur.ptr;
             if (next->par->l == next) {
                 next->par->l = next->r;
                 if (next->r) next->r->par = next->par;
@@ -253,32 +259,35 @@ public:
             if (v->par->l == v) v->par->l = next; else v->par->r = next;
         }
         delete v;
-        if (!root->l) {
-            delete root;
-            root = nullptr;
-        }
-        return upper_bound(x);
+        return res;
     }
 
     bool empty() const noexcept {
-       return (root == nullptr);
+       return (!_end.l);
     }
     void clear() noexcept {
-        dealloc(root);
-        root = nullptr;
+        dealloc(_end.l);
+        _end.l = nullptr;
     }
     friend void swap(Set<T> & a, Set<T> & b) noexcept {
-        std::swap(a.root, b.root);
+        node* tmp = b._end.l;
+        b._end.l = a._end.l;
+        if (b._end.l) b._end.l->par = &b._end;
+        a._end.l = tmp;
+        if (a._end.l) a._end.l->par = &a._end;
     }
 private:
-    node* root;
-    void alloc (node *&cur, const node *o) {
-        if (!o) return;
-        if (o->l) cur->l = new extended_node(static_cast<extended_node*>(o->l)->value, cur);
-        alloc(cur->l, o->l);
-        if (o->r) cur->r = new extended_node(static_cast<extended_node*>(o->r)->value, cur);
-        alloc(cur->r, o->r);    }
-    void dealloc(node *&cur) noexcept {
+    node _end;
+    node* alloc (const node * o) {
+        node* cur;
+        if (!o) return nullptr; else {
+            cur = new extended_node(static_cast<const extended_node*>(o)->value, o->par);
+            cur->l = alloc(o->l);
+            cur->r = alloc(o->r);
+        }
+        return cur;
+    }
+    void dealloc(node * cur) noexcept {
         if (!cur) return;
         if (cur->r) dealloc(cur->r);
         if (cur->l) dealloc(cur->l);
