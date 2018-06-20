@@ -23,12 +23,10 @@ public:
 
     Set() noexcept {}
     ~Set() noexcept {
-        dealloc(_end.l);
-        _end.l = nullptr;
+        clear();
     }
-    Set(Set const& o) : _end(o._end) {
-        _end.l = alloc(o._end.l);
-        if (_end.l) _end.l->par = &_end;
+    Set(Set const& o) : Set() {
+        for (const auto& el : o) insert(el);
     }
     Set& operator = (Set const& o) {
         Set tmp(o);
@@ -270,11 +268,11 @@ public:
         _end.l = nullptr;
     }
     friend void swap(Set<T> & a, Set<T> & b) noexcept {
-        node* tmp = b._end.l;
-        b._end.l = a._end.l;
-        if (b._end.l) b._end.l->par = &b._end;
-        a._end.l = tmp;
-        if (a._end.l) a._end.l->par = &a._end;
+         std::swap(a._end.l, b._end.l);
+         std::swap(a._end.r, b._end.r);
+         std::swap(a._end.par, b._end.par);
+         if (a._end.l) a._end.l->par = &a._end;
+         if (b._end.l) b._end.l->par = &b._end;
     }
 private:
     node _end;
