@@ -210,9 +210,9 @@ public:
     }
 
     const_iterator erase(const_iterator place) noexcept {
+        if (place == end()) return end();
         const_iterator res(place);
         res++;
-        if (place == end()) return end();
         node* v = place.ptr;
         T x = static_cast<extended_node*>(v)->value;
         if (!v->l && !v->r) {
