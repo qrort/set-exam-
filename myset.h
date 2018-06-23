@@ -2,7 +2,6 @@
 #define MYSET_H
 
 #include <iterator>
-#include <iostream>
 
 template <typename T>
 class Set {
@@ -176,7 +175,7 @@ public:
         return std::make_pair(iterator(v), false);
     }
 
-    iterator find(T const& x, node* v = nullptr, bool init = false) noexcept {
+    iterator find(T const& x, node* v = nullptr, bool init = false) {
         if (!init) v = _end.l;
         if (!v) return end();
         T const& val = static_cast<extended_node*>(v)->value;
@@ -185,7 +184,7 @@ public:
         return iterator(v);
     }
 
-    const_iterator find(T const& x, node* v = nullptr, bool init = false) const noexcept {
+    const_iterator find(T const& x, node* v = nullptr, bool init = false) const {
         if (!init) v = _end.l;
         if (!v) return end();
         T const& val = static_cast<extended_node*>(v)->value;
@@ -194,7 +193,7 @@ public:
         return const_iterator(v);
     }
 
-    const_iterator upper_bound(T const& x) const noexcept {
+    const_iterator upper_bound(T const& x) const {
        node* v = _end.l;
        node* last = nullptr;
        while(v) {
@@ -205,11 +204,11 @@ public:
        }
        return (last && x < static_cast<extended_node*>(last)->value) ? const_iterator(last) : end();
     }
-    const_iterator lower_bound(T const& x) const noexcept {
+    const_iterator lower_bound(T const& x) const {
         if (find(x) != end()) return find(x); else return upper_bound(x);
     }
 
-    const_iterator erase(const_iterator place) noexcept {
+    const_iterator erase(const_iterator place) {
         const_iterator res(place);
         res++;
         if (place == end()) return end();
@@ -295,3 +294,4 @@ private:
 
 
 #endif
+
