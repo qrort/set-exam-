@@ -118,7 +118,7 @@ public:
     };
 
     using iterator = Iterator<T>;
-    using const_iterator = Iterator <const T>;
+    using const_iterator = Iterator <T>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -294,4 +294,3 @@ private:
 
 
 #endif
-
