@@ -17,7 +17,7 @@ public:
         extended_node() = delete;
         ~extended_node() = default;
         extended_node(T const& v, node* pv = nullptr, node* lv = nullptr, node* rv = nullptr) :
-            value(v), node(lv, rv, pv) {}
+             node(lv, rv, pv), value(v) {}
     };
 
     Set() noexcept {}
